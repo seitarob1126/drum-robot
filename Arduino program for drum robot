@@ -3,7 +3,7 @@
 #include <Servo.h>
 Servo myServo;
 
-const int servopin = 10;
+const int servopin = 11;
 const int pwmPin = 9; // PWM出力ピン
 float center_vol = 2500; //mV
 float amplitude_vol = 2500; //mV
@@ -17,7 +17,7 @@ void handleSerialInput() {
     char cmd = Serial.read();
     switch (cmd) {
       case 'o': //open
-        myServo.write(32); 
+        myServo.write(100); 
         swichflag = true;
         Serial.println("Start Now");
         break;
@@ -27,13 +27,13 @@ void handleSerialInput() {
         Serial.println(amplitude_vol);
         break;
       case 'f': //fast
-        frequency += 0.05;
+        frequency += 0.2;
         time = (1/frequency)*1000; //ms毎
         Serial.print("Frequency: ");
         Serial.println(frequency);
         break;
       case 's': //slow
-        frequency -= 0.05;
+        frequency -= 0.2;
         time = (1/frequency)*1000; //ms毎
         Serial.print("Frequency: ");
         Serial.println(frequency);
@@ -46,7 +46,7 @@ void handleSerialInput() {
         break;
       case 'b': //brake
         swichflag = false;
-        myServo.write(100);
+        myServo.write(32);
         break;
     }
   }
@@ -57,12 +57,12 @@ void PWM() {
   if(flag) {
     int pwmValue = (int)(((center_vol + amplitude_vol)/5000) * 255.0 * 0.8);
     analogWrite(pwmPin, pwmValue); // PWM出力
-    Serial.println(pwmValue);
+    //Serial.println(pwmValue);
     flag = false;
   } else {
     int pwmValue = (int)(((center_vol - amplitude_vol)/5000) * 255.0);
     analogWrite(pwmPin, pwmValue); // PWM出力
-    Serial.println(pwmValue);
+    //Serial.println(pwmValue);
     flag = true;
   }
   }
@@ -78,6 +78,7 @@ void setup() {
   motor_current_1 = millis();
   analogWrite(pwmPin, (int)(((center_vol - amplitude_vol)/5000) * 255.0));
   myServo.attach(servopin,600,2200);
+  myServo.write(32);
 }
 
 void loop() {
