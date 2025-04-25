@@ -1,0 +1,90 @@
+//0mV ↔ 5000mV
+#include <stdio.h>
+#include <Servo.h>
+Servo myServo;
+
+const int servopin = 10;
+const int pwmPin = 9; // PWM出力ピン
+float center_vol = 2500; //mV
+float amplitude_vol = 2500; //mV
+float frequency = 3.0; //初期周波数(Hz)
+float time = (1/frequency)*1000; //ms毎
+bool flag = false; //trueなら4900mV、falseなら100mV
+bool swichflag = false;
+
+void handleSerialInput() {
+  if (Serial.available()) {
+    char cmd = Serial.read();
+    switch (cmd) {
+      case 'o': //open
+        myServo.write(32); 
+        swichflag = true;
+        Serial.println("Start Now");
+        break;
+      case 't': //tiny
+        amplitude_vol -= 100;
+        Serial.print("Amplitude: ");
+        Serial.println(amplitude_vol);
+        break;
+      case 'f': //fast
+        frequency += 0.05;
+        time = (1/frequency)*1000; //ms毎
+        Serial.print("Frequency: ");
+        Serial.println(frequency);
+        break;
+      case 's': //slow
+        frequency -= 0.05;
+        time = (1/frequency)*1000; //ms毎
+        Serial.print("Frequency: ");
+        Serial.println(frequency);
+        break;
+      case 'q': //quit
+        //amplitude_vol = 0;
+        //center_vol = 0;
+        swichflag = false;
+        Serial.println("Quit Now");
+        break;
+      case 'b': //brake
+        swichflag = false;
+        myServo.write(100);
+        break;
+    }
+  }
+}
+
+void PWM() {
+  if(swichflag) {
+  if(flag) {
+    int pwmValue = (int)(((center_vol + amplitude_vol)/5000) * 255.0 * 0.8);
+    analogWrite(pwmPin, pwmValue); // PWM出力
+    Serial.println(pwmValue);
+    flag = false;
+  } else {
+    int pwmValue = (int)(((center_vol - amplitude_vol)/5000) * 255.0);
+    analogWrite(pwmPin, pwmValue); // PWM出力
+    Serial.println(pwmValue);
+    flag = true;
+  }
+  }
+}
+
+int motor_current_1, motor_current_2;
+void setup() {
+  Serial.begin(115200);
+  pinMode(pwmPin, OUTPUT);
+  Serial.println("PWM Sin Generator with RC Filter");
+  //Serial.println("Use 't' to decrease amplitude.");
+  Serial.println("Use 'f'/'s' to increase/decrease frequency.");
+  motor_current_1 = millis();
+  analogWrite(pwmPin, (int)(((center_vol - amplitude_vol)/5000) * 255.0));
+  myServo.attach(servopin,600,2200);
+}
+
+void loop() {
+  handleSerialInput();
+  motor_current_2 = millis();
+  if ((motor_current_2 - motor_current_1) > time) {
+    PWM();
+    motor_current_1 = motor_current_2;
+  }
+}
